@@ -50,9 +50,23 @@ export default function Home() {
   const [message, setMessage] = useState("");
 
   async function loadData() {
-    const res = await fetch("/api/leaderboard");
-    const data = await res.json();
-    setPlayers(data);
+    try {
+      const res = await fetch("/api/leaderboard", {
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setPlayers(data);
+      } else {
+        setPlayers([]);
+        setMessage("Leaderboard data er ikke et array.");
+      }
+    } catch {
+      setMessage("Kunne ikke hente leaderboard.");
+      setPlayers([]);
+    }
   }
 
   async function refreshData() {
@@ -67,14 +81,18 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage("Noget gik galt under refresh.");
+        setMessage("Refresh fejlede.");
         return;
       }
 
-      setPlayers(data);
-      setMessage("Stats opdateret.");
+      if (Array.isArray(data)) {
+        setPlayers(data);
+        setMessage("Stats opdateret.");
+      } else {
+        setMessage("Refresh gav forkert data tilbage.");
+      }
     } catch {
-      setMessage("Refresh fejlede. Riot er nok sur igen.");
+      setMessage("Refresh fejlede. Riot eller Vercel er sur.");
     } finally {
       setLoading(false);
     }
@@ -82,21 +100,28 @@ export default function Home() {
 
   useEffect(() => {
     loadData();
-    }, []);
+  }, []);
 
   const bestWinrate = players.length
     ? Math.max(...players.map((p) => p.winrate ?? 0))
     : 0;
+
   const worstWinrate = players.length
     ? Math.min(...players.map((p) => p.winrate ?? 0))
     : 0;
 
-  const bestKda = players.length ? Math.max(...players.map((p) => p.kda ?? 0)) : 0;
-  const worstKda = players.length ? Math.min(...players.map((p) => p.kda ?? 0)) : 0;
+  const bestKda = players.length
+    ? Math.max(...players.map((p) => p.kda ?? 0))
+    : 0;
+
+  const worstKda = players.length
+    ? Math.min(...players.map((p) => p.kda ?? 0))
+    : 0;
 
   const bestDamage = players.length
     ? Math.max(...players.map((p) => p.avgDamage ?? 0))
     : 0;
+
   const worstDamage = players.length
     ? Math.min(...players.map((p) => p.avgDamage ?? 0))
     : 0;
@@ -104,6 +129,7 @@ export default function Home() {
   const bestDeaths = players.length
     ? Math.max(...players.map((p) => p.avgDeaths ?? 0))
     : 0;
+
   const worstDeaths = players.length
     ? Math.min(...players.map((p) => p.avgDeaths ?? 0))
     : 0;
@@ -116,15 +142,15 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white p-8">
-      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between mb-8">
+      <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-5xl font-black">Flex Master Tracker</h1>
-          <p className="text-zinc-400 mt-2">
+          <p className="mt-2 text-zinc-400">
             Ladder, stats og beviser på hvem der faktisk bærer flex-drømmen.
           </p>
         </div>
 
-        <div className="flex flex-col items-start md:items-end gap-2">
+        <div className="flex flex-col items-start gap-2 md:items-end">
           <button
             onClick={refreshData}
             disabled={loading}
@@ -139,13 +165,14 @@ export default function Home() {
 
       {players.length === 0 ? (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-zinc-400">
-          Ingen data endnu. Tryk <span className="text-emerald-400">Opdater stats</span>.
+          Ingen data endnu. Tryk{" "}
+          <span className="text-emerald-400">Opdater stats</span>.
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-5">
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-zinc-400 text-sm">Højeste rank</div>
+              <div className="text-sm text-zinc-400">Højeste rank</div>
               <div className="text-2xl font-bold">{topRanked?.name}</div>
               <div className="text-zinc-400">
                 {topRanked?.tier} {topRanked?.rank} {topRanked?.lp} LP
@@ -153,31 +180,31 @@ export default function Home() {
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-zinc-400 text-sm">Bedste winrate</div>
+              <div className="text-sm text-zinc-400">Bedste winrate</div>
               <div className="text-2xl font-bold text-green-400">
-                {players.find((p) => p.winrate === bestWinrate)?.name}
+                {players.find((p) => p.winrate === bestWinrate)?.name ?? "-"}
               </div>
               <div className="text-zinc-400">{bestWinrate}%</div>
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-zinc-400 text-sm">Bedste KDA</div>
+              <div className="text-sm text-zinc-400">Bedste KDA</div>
               <div className="text-2xl font-bold text-green-400">
-                {players.find((p) => p.kda === bestKda)?.name}
+                {players.find((p) => p.kda === bestKda)?.name ?? "-"}
               </div>
               <div className="text-zinc-400">{bestKda}</div>
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-zinc-400 text-sm">Mest død</div>
+              <div className="text-sm text-zinc-400">Mest død</div>
               <div className="text-2xl font-bold text-red-400">
-                {players.find((p) => p.avgDeaths === bestDeaths)?.name}
+                {players.find((p) => p.avgDeaths === bestDeaths)?.name ?? "-"}
               </div>
               <div className="text-zinc-400">{bestDeaths} deaths/game</div>
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-zinc-400 text-sm">Tracked games</div>
+              <div className="text-sm text-zinc-400">Tracked games</div>
               <div className="text-2xl font-bold">{mostTrackedGames}</div>
               <div className="text-zinc-400">siden reset</div>
             </div>
@@ -205,18 +232,20 @@ export default function Home() {
               <tbody>
                 {players.map((p, index) => (
                   <tr
-                    key={p.name}
+                    key={`${p.name}-${p.gameName}`}
                     className="border-t border-zinc-800 hover:bg-zinc-900/60"
                   >
-                    <td className="p-4 font-bold text-xl">{index + 1}</td>
+                    <td className="p-4 text-xl font-bold">{index + 1}</td>
 
                     <td className="p-4">
-                      <div className="font-bold text-lg">{p.name}</div>
+                      <div className="text-lg font-bold">{p.name}</div>
                       <div className="text-sm text-zinc-500">
                         {p.gameName}#{p.tagLine}
                       </div>
                       {p.error && (
-                        <div className="text-xs text-red-400 mt-1">{p.error}</div>
+                        <div className="mt-1 text-xs text-red-400">
+                          {p.error}
+                        </div>
                       )}
                     </td>
 
@@ -280,11 +309,10 @@ export default function Home() {
                         worstDamage
                       )}`}
                     >
-                      {p.avgDamage?.toLocaleString()}
+                      {(p.avgDamage ?? 0).toLocaleString()}
                     </td>
 
                     <td className="p-4">{p.avgCsMin}</td>
-
                     <td className="p-4">{p.avgVision}</td>
                   </tr>
                 ))}
@@ -292,7 +320,7 @@ export default function Home() {
             </table>
           </div>
 
-          <p className="text-zinc-500 text-sm mt-4">
+          <p className="mt-4 text-sm text-zinc-500">
             Rank, W/L og season WR er hele Flex season. KDA, damage, CS/min,
             vision og recent games tæller kun games efter reset.
           </p>
@@ -300,13 +328,15 @@ export default function Home() {
           <div className="mt-10 space-y-6">
             {players.map((p) => (
               <div
-                key={p.name}
+                key={`recent-${p.name}-${p.gameName}`}
                 className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
               >
                 <div className="mb-4 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
                   <div>
                     <h2 className="text-2xl font-bold">{p.name}</h2>
-                    <p className="text-sm text-zinc-500">Seneste tracked games</p>
+                    <p className="text-sm text-zinc-500">
+                      Seneste tracked games
+                    </p>
                   </div>
 
                   <div className="text-sm text-zinc-500">
@@ -318,7 +348,7 @@ export default function Home() {
                   {p.recentMatches?.length > 0 ? (
                     p.recentMatches.map((match: any, i: number) => (
                       <div
-                        key={i}
+                        key={`${p.name}-match-${i}`}
                         className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 md:flex-row md:items-center md:justify-between"
                       >
                         <div className="flex items-center gap-4">
@@ -333,7 +363,9 @@ export default function Home() {
                           </span>
 
                           <div>
-                            <div className="font-semibold">{match.champion}</div>
+                            <div className="font-semibold">
+                              {match.champion}
+                            </div>
                             <div className="text-sm text-zinc-500">
                               {match.kills}/{match.deaths}/{match.assists}
                             </div>
@@ -342,10 +374,12 @@ export default function Home() {
 
                         <div className="flex flex-wrap items-center gap-4 text-sm md:gap-6">
                           <div className="text-zinc-300">
-                            {match.damage?.toLocaleString()} dmg
+                            {(match.damage ?? 0).toLocaleString()} dmg
                           </div>
 
-                          <div className="text-zinc-300">{match.csMin} CS/min</div>
+                          <div className="text-zinc-300">
+                            {match.csMin} CS/min
+                          </div>
 
                           <div className="text-zinc-500">
                             {formatDate(match.timestamp)}
@@ -354,7 +388,7 @@ export default function Home() {
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-500 text-sm">
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-500">
                       Ingen tracked games endnu.
                     </div>
                   )}
