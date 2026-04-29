@@ -21,6 +21,27 @@ function rankColor(tier: string) {
   return colors[tier] ?? colors.UNRANKED;
 }
 
+function rankIcon(tier: string) {
+  const t = tier?.toLowerCase();
+
+  const icons: Record<string, string> = {
+    iron: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-iron.png",
+    bronze: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-bronze.png",
+    silver: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-silver.png",
+    gold: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-gold.png",
+    platinum: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-platinum.png",
+    emerald: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-emerald.png",
+    diamond: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-diamond.png",
+    master: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-master.png",
+    grandmaster:
+      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-grandmaster.png",
+    challenger:
+      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-challenger.png",
+  };
+
+  return icons[t] ?? null;
+}
+
 function statColor(value: number, best: number, worst: number, reverse = false) {
   if (best === worst) return "text-white";
 
@@ -87,6 +108,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [sortKey, setSortKey] = useState("score");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
   async function loadData() {
     try {
       const res = await fetch("/api/leaderboard", {
@@ -136,9 +160,44 @@ export default function Home() {
     }
   }
 
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === "desc" ? "asc" : "desc");
+    } else {
+      setSortKey(key);
+      setSortDirection("desc");
+    }
+  }
+
+  function SortHeader({
+    label,
+    column,
+  }: {
+    label: string;
+    column: string;
+  }) {
+    return (
+      <th
+        className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+        onClick={() => handleSort(column)}
+      >
+        {label}{" "}
+        {sortKey === column ? (sortDirection === "desc" ? "↓" : "↑") : ""}
+      </th>
+    );
+  }
+
   useEffect(() => {
     loadData();
   }, []);
+
+  const sortedPlayers = [...players].sort((a, b) => {
+    const av = a[sortKey] ?? 0;
+    const bv = b[sortKey] ?? 0;
+
+    if (sortDirection === "desc") return bv - av;
+    return av - bv;
+  });
 
   const bestWinrate = players.length
     ? Math.max(...players.map((p) => p.winrate ?? 0))
@@ -188,14 +247,13 @@ export default function Home() {
   const topDeathsGame = getLeader(players, "topDeathsGame", true);
   const topDeathsPerGame = getLeader(players, "avgDeaths", true);
 
-  const topRanked = players[0];
   const totalTrackedGames = players.reduce(
     (sum, p) => sum + (p.trackedGames ?? 0),
     0
   );
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-white p-8">
+    <main className="min-h-screen bg-zinc-950 p-8 text-white">
       <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-5xl font-black">Flex Master Tracker</h1>
@@ -278,34 +336,32 @@ export default function Home() {
             />
           </div>
 
-          
-
-           
-
           <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950">
-            <table className="w-full min-w-[1300px] text-left">
+            <table className="w-full min-w-[1400px] text-left">
               <thead className="bg-zinc-900 text-zinc-300">
                 <tr>
                   <th className="p-4">#</th>
                   <th className="p-4">Spiller</th>
                   <th className="p-4">Role</th>
-                  <th className="p-4">Flex Rank</th>
-                  <th className="p-4">Tracked W/L</th>
-                  <th className="p-4">Tracked WR</th>
-                  <th className="p-4">Games</th>
-                  <th className="p-4">Overall</th>
-                  <th className="p-4">KDA</th>
-                  <th className="p-4">Avg K/D/A</th>
-                  <th className="p-4">Top kills</th>
-                  <th className="p-4">Top deaths</th>
-                  <th className="p-4">Damage</th>
-                  <th className="p-4">CS/min</th>
-                  <th className="p-4">Vision</th>
+                  <SortHeader label="Flex Rank" column="score" />
+                  <SortHeader label="Tracked W/L" column="wins" />
+                  <SortHeader label="Tracked WR" column="winrate" />
+                  <SortHeader label="Games" column="trackedGames" />
+                  <SortHeader label="Overall" column="overallScore" />
+                  <SortHeader label="KDA" column="kda" />
+                  <SortHeader label="Avg kills" column="avgKills" />
+                  <SortHeader label="Avg deaths" column="avgDeaths" />
+                  <SortHeader label="Avg assists" column="avgAssists" />
+                  <SortHeader label="Top kills" column="topKillsGame" />
+                  <SortHeader label="Top deaths" column="topDeathsGame" />
+                  <SortHeader label="Damage" column="avgDamage" />
+                  <SortHeader label="CS/min" column="avgCsMin" />
+                  <SortHeader label="Vision" column="avgVision" />
                 </tr>
               </thead>
 
               <tbody>
-                {players.map((p, index) => (
+                {sortedPlayers.map((p, index) => (
                   <tr
                     key={`${p.name}-${p.gameName}`}
                     className="border-t border-zinc-800 hover:bg-zinc-900/60"
@@ -331,13 +387,23 @@ export default function Home() {
                     </td>
 
                     <td className="p-4">
-                      <span
-                        className={`rounded-full border px-3 py-1 font-bold ${rankColor(
-                          p.tier
-                        )}`}
-                      >
-                        {p.tier} {p.rank} {p.lp} LP
-                      </span>
+                      <div className="flex items-center gap-3">
+                        {rankIcon(p.tier) && (
+                          <img
+                            src={rankIcon(p.tier)!}
+                            alt={p.tier}
+                            className="h-10 w-10 object-contain"
+                          />
+                        )}
+
+                        <span
+                          className={`rounded-full border px-3 py-1 font-bold ${rankColor(
+                            p.tier
+                          )}`}
+                        >
+                          {p.tier} {p.rank} {p.lp} LP
+                        </span>
+                      </div>
                     </td>
 
                     <td className="p-4">
@@ -364,22 +430,20 @@ export default function Home() {
                       {p.kda}
                     </td>
 
-                    <td className="p-4">
-                      <span className="text-green-400">{p.avgKills}</span>
-                      <span className="text-zinc-500"> / </span>
-                      <span
-                        className={statColor(
-                          p.avgDeaths,
-                          bestDeaths,
-                          worstDeaths,
-                          true
-                        )}
-                      >
-                        {p.avgDeaths}
-                      </span>
-                      <span className="text-zinc-500"> / </span>
-                      <span className="text-sky-400">{p.avgAssists}</span>
+                    <td className="p-4 text-green-400">{p.avgKills}</td>
+
+                    <td
+                      className={`p-4 ${statColor(
+                        p.avgDeaths,
+                        bestDeaths,
+                        worstDeaths,
+                        true
+                      )}`}
+                    >
+                      {p.avgDeaths}
                     </td>
+
+                    <td className="p-4 text-sky-400">{p.avgAssists}</td>
 
                     <td
                       className={`p-4 ${statColor(
@@ -421,8 +485,9 @@ export default function Home() {
           </div>
 
           <p className="mt-4 text-sm text-zinc-500">
-            Flex rank er live rank. W/L, WR, KDA, damage, CS/min, vision og awards
-            tæller kun tracked games efter reset.
+            Klik på kolonneoverskrifterne for at sortere. Flex rank er live
+            rank. W/L, WR, KDA, damage, CS/min, vision og awards tæller kun
+            tracked games efter reset.
           </p>
 
           <div className="mt-10 space-y-6">
