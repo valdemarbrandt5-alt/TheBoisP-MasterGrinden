@@ -1,17 +1,25 @@
-import fs from "fs";
-import path from "path";
+import { supabase } from "@/lib/supabase";
 
-const filePath = path.join(process.cwd(), "data", "leaderboard.json");
+const LEADERBOARD_ID = "main";
 
-export function readLeaderboard() {
-  if (!fs.existsSync(filePath)) {
-    return [];
-  }
+export async function readLeaderboard() {
+  const { data, error } = await supabase
+    .from("leaderboard")
+    .select("data")
+    .eq("id", LEADERBOARD_ID)
+    .single();
 
-  const raw = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(raw);
+  if (error) return [];
+
+  return data?.data ?? [];
 }
 
-export function saveLeaderboard(data: any) {
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+export async function saveLeaderboard(leaderboardData: any) {
+  const { error } = await supabase.from("leaderboard").upsert({
+    id: LEADERBOARD_ID,
+    data: leaderboardData,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) throw new Error(error.message);
 }
