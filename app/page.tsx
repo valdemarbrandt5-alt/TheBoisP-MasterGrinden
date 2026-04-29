@@ -278,21 +278,9 @@ export default function Home() {
             />
           </div>
 
-          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-sm text-zinc-400">Højeste live rank</div>
-              <div className="text-2xl font-bold">{topRanked?.name}</div>
-              <div className="text-zinc-400">
-                {topRanked?.tier} {topRanked?.rank} {topRanked?.lp} LP
-              </div>
-            </div>
+          
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-sm text-zinc-400">Tracker status</div>
-              <div className="text-2xl font-bold">{totalTrackedGames} games</div>
-              <div className="text-zinc-400">samlet siden reset</div>
-            </div>
-          </div>
+           
 
           <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950">
             <table className="w-full min-w-[1300px] text-left">
