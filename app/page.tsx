@@ -22,7 +22,7 @@ function rankColor(tier: string) {
 }
 
 function rankIcon(tier: string) {
-  const t = tier?.toLowerCase();
+  const t = tier?.trim().toLowerCase();
 
   const icons: Record<string, string> = {
     iron: "/ranks/iron.png",
@@ -67,8 +67,8 @@ function getLeader(players: any[], key: string, highest = true) {
   if (!players.length) return null;
 
   return [...players].sort((a, b) => {
-    const av = a[key] ?? 0;
-    const bv = b[key] ?? 0;
+    const av = Number(a[key] ?? 0);
+    const bv = Number(b[key] ?? 0);
     return highest ? bv - av : av - bv;
   })[0];
 }
@@ -159,30 +159,24 @@ export default function Home() {
   }
 
   function handleSort(key: string) {
-    if (sortKey === key) {
-      setSortDirection(sortDirection === "desc" ? "asc" : "desc");
-    } else {
-      setSortKey(key);
+    console.log("Sorting by:", key);
+
+    setSortKey((currentKey) => {
+      if (currentKey === key) {
+        setSortDirection((currentDirection) =>
+          currentDirection === "desc" ? "asc" : "desc"
+        );
+        return currentKey;
+      }
+
       setSortDirection("desc");
-    }
+      return key;
+    });
   }
 
-  function SortHeader({
-    label,
-    column,
-  }: {
-    label: string;
-    column: string;
-  }) {
-    return (
-      <th
-        className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
-        onClick={() => handleSort(column)}
-      >
-        {label}{" "}
-        {sortKey === column ? (sortDirection === "desc" ? "↓" : "↑") : ""}
-      </th>
-    );
+  function sortArrow(column: string) {
+    if (sortKey !== column) return "";
+    return sortDirection === "desc" ? "↓" : "↑";
   }
 
   useEffect(() => {
@@ -190,51 +184,51 @@ export default function Home() {
   }, []);
 
   const sortedPlayers = [...players].sort((a, b) => {
-    const av = a[sortKey] ?? 0;
-    const bv = b[sortKey] ?? 0;
+    const av = Number(a[sortKey] ?? 0);
+    const bv = Number(b[sortKey] ?? 0);
 
     if (sortDirection === "desc") return bv - av;
     return av - bv;
   });
 
   const bestWinrate = players.length
-    ? Math.max(...players.map((p) => p.winrate ?? 0))
+    ? Math.max(...players.map((p) => Number(p.winrate ?? 0)))
     : 0;
 
   const worstWinrate = players.length
-    ? Math.min(...players.map((p) => p.winrate ?? 0))
+    ? Math.min(...players.map((p) => Number(p.winrate ?? 0)))
     : 0;
 
   const bestKda = players.length
-    ? Math.max(...players.map((p) => p.kda ?? 0))
+    ? Math.max(...players.map((p) => Number(p.kda ?? 0)))
     : 0;
 
   const worstKda = players.length
-    ? Math.min(...players.map((p) => p.kda ?? 0))
+    ? Math.min(...players.map((p) => Number(p.kda ?? 0)))
     : 0;
 
   const bestDamage = players.length
-    ? Math.max(...players.map((p) => p.avgDamage ?? 0))
+    ? Math.max(...players.map((p) => Number(p.avgDamage ?? 0)))
     : 0;
 
   const worstDamage = players.length
-    ? Math.min(...players.map((p) => p.avgDamage ?? 0))
+    ? Math.min(...players.map((p) => Number(p.avgDamage ?? 0)))
     : 0;
 
   const bestDeaths = players.length
-    ? Math.max(...players.map((p) => p.avgDeaths ?? 0))
+    ? Math.max(...players.map((p) => Number(p.avgDeaths ?? 0)))
     : 0;
 
   const worstDeaths = players.length
-    ? Math.min(...players.map((p) => p.avgDeaths ?? 0))
+    ? Math.min(...players.map((p) => Number(p.avgDeaths ?? 0)))
     : 0;
 
   const bestTopKillsGame = players.length
-    ? Math.max(...players.map((p) => p.topKillsGame ?? 0))
+    ? Math.max(...players.map((p) => Number(p.topKillsGame ?? 0)))
     : 0;
 
   const worstTopDeathsGame = players.length
-    ? Math.max(...players.map((p) => p.topDeathsGame ?? 0))
+    ? Math.max(...players.map((p) => Number(p.topDeathsGame ?? 0)))
     : 0;
 
   const overallBest = getLeader(players, "overallScore", true);
@@ -246,7 +240,7 @@ export default function Home() {
   const topDeathsPerGame = getLeader(players, "avgDeaths", true);
 
   const totalTrackedGames = players.reduce(
-    (sum, p) => sum + (p.trackedGames ?? 0),
+    (sum, p) => sum + Number(p.trackedGames ?? 0),
     0
   );
 
@@ -341,20 +335,104 @@ export default function Home() {
                   <th className="p-4">#</th>
                   <th className="p-4">Spiller</th>
                   <th className="p-4">Role</th>
-                  <SortHeader label="Flex Rank" column="score" />
-                  <SortHeader label="Tracked W/L" column="wins" />
-                  <SortHeader label="Tracked WR" column="winrate" />
-                  <SortHeader label="Games" column="trackedGames" />
-                  <SortHeader label="Overall" column="overallScore" />
-                  <SortHeader label="KDA" column="kda" />
-                  <SortHeader label="Avg kills" column="avgKills" />
-                  <SortHeader label="Avg deaths" column="avgDeaths" />
-                  <SortHeader label="Avg assists" column="avgAssists" />
-                  <SortHeader label="Top kills" column="topKillsGame" />
-                  <SortHeader label="Top deaths" column="topDeathsGame" />
-                  <SortHeader label="Damage" column="avgDamage" />
-                  <SortHeader label="CS/min" column="avgCsMin" />
-                  <SortHeader label="Vision" column="avgVision" />
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("score")}
+                  >
+                    Flex Rank {sortArrow("score")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("wins")}
+                  >
+                    Tracked W/L {sortArrow("wins")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("winrate")}
+                  >
+                    Tracked WR {sortArrow("winrate")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("trackedGames")}
+                  >
+                    Games {sortArrow("trackedGames")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("overallScore")}
+                  >
+                    Overall {sortArrow("overallScore")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("kda")}
+                  >
+                    KDA {sortArrow("kda")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("avgKills")}
+                  >
+                    Avg kills {sortArrow("avgKills")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("avgDeaths")}
+                  >
+                    Avg deaths {sortArrow("avgDeaths")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("avgAssists")}
+                  >
+                    Avg assists {sortArrow("avgAssists")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("topKillsGame")}
+                  >
+                    Top kills {sortArrow("topKillsGame")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("topDeathsGame")}
+                  >
+                    Top deaths {sortArrow("topDeathsGame")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("avgDamage")}
+                  >
+                    Damage {sortArrow("avgDamage")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("avgCsMin")}
+                  >
+                    CS/min {sortArrow("avgCsMin")}
+                  </th>
+
+                  <th
+                    className="cursor-pointer whitespace-nowrap p-4 hover:text-white"
+                    onClick={() => handleSort("avgVision")}
+                  >
+                    Vision {sortArrow("avgVision")}
+                  </th>
                 </tr>
               </thead>
 
@@ -390,7 +468,7 @@ export default function Home() {
                           <img
                             src={rankIcon(p.tier)!}
                             alt={p.tier}
-                            className="h-10 w-10 object-contain"
+                            className="h-10 w-10 min-w-10 object-contain"
                           />
                         )}
 
