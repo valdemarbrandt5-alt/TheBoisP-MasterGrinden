@@ -44,6 +44,44 @@ function formatDate(timestamp: number) {
   });
 }
 
+function getLeader(players: any[], key: string, highest = true) {
+  if (!players.length) return null;
+
+  return [...players].sort((a, b) => {
+    const av = a[key] ?? 0;
+    const bv = b[key] ?? 0;
+    return highest ? bv - av : av - bv;
+  })[0];
+}
+
+function AwardCard({
+  title,
+  player,
+  value,
+  tone = "green",
+}: {
+  title: string;
+  player: any;
+  value: string | number;
+  tone?: "green" | "red" | "purple" | "yellow" | "blue";
+}) {
+  const tones = {
+    green: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    red: "text-red-400 border-red-500/30 bg-red-500/10",
+    purple: "text-purple-400 border-purple-500/30 bg-purple-500/10",
+    yellow: "text-yellow-300 border-yellow-400/30 bg-yellow-400/10",
+    blue: "text-cyan-300 border-cyan-400/30 bg-cyan-400/10",
+  };
+
+  return (
+    <div className={`rounded-2xl border p-5 ${tones[tone]}`}>
+      <div className="text-sm opacity-80">{title}</div>
+      <div className="mt-1 text-2xl font-black">{player?.name ?? "-"}</div>
+      <div className="mt-1 text-zinc-300">{value}</div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -134,11 +172,27 @@ export default function Home() {
     ? Math.min(...players.map((p) => p.avgDeaths ?? 0))
     : 0;
 
-  const mostTrackedGames = players.length
-    ? Math.max(...players.map((p) => p.trackedGames ?? 0))
+  const bestTopKillsGame = players.length
+    ? Math.max(...players.map((p) => p.topKillsGame ?? 0))
     : 0;
 
+  const worstTopDeathsGame = players.length
+    ? Math.max(...players.map((p) => p.topDeathsGame ?? 0))
+    : 0;
+
+  const overallBest = getLeader(players, "overallScore", true);
+  const topDamage = getLeader(players, "avgDamage", true);
+  const topWinrate = getLeader(players, "winrate", true);
+  const topKda = getLeader(players, "kda", true);
+  const topKillsGame = getLeader(players, "topKillsGame", true);
+  const topDeathsGame = getLeader(players, "topDeathsGame", true);
+  const topDeathsPerGame = getLeader(players, "avgDeaths", true);
+
   const topRanked = players[0];
+  const totalTrackedGames = players.reduce(
+    (sum, p) => sum + (p.trackedGames ?? 0),
+    0
+  );
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white p-8">
@@ -146,7 +200,10 @@ export default function Home() {
         <div>
           <h1 className="text-5xl font-black">Flex Master Tracker</h1>
           <p className="mt-2 text-zinc-400">
-            Ladder, stats og beviser på hvem der faktisk bærer flex-drømmen.
+            Ladder, awards og beviser på hvem der faktisk bærer flex-drømmen.
+          </p>
+          <p className="mt-1 text-sm text-zinc-500">
+            Tracked games i alt: {totalTrackedGames}
           </p>
         </div>
 
@@ -170,9 +227,60 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-5">
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-7">
+            <AwardCard
+              title="Overall bedste"
+              player={overallBest}
+              value={`${overallBest?.overallScore ?? 0} score`}
+              tone="purple"
+            />
+
+            <AwardCard
+              title="Top damage"
+              player={topDamage}
+              value={`${(topDamage?.avgDamage ?? 0).toLocaleString()} dmg/game`}
+              tone="green"
+            />
+
+            <AwardCard
+              title="Bedste winrate"
+              player={topWinrate}
+              value={`${topWinrate?.winrate ?? 0}%`}
+              tone="green"
+            />
+
+            <AwardCard
+              title="Bedste KDA"
+              player={topKda}
+              value={topKda?.kda ?? 0}
+              tone="blue"
+            />
+
+            <AwardCard
+              title="Flest kills i ét game"
+              player={topKillsGame}
+              value={`${topKillsGame?.topKillsGame ?? 0} kills`}
+              tone="yellow"
+            />
+
+            <AwardCard
+              title="Flest døde i ét game"
+              player={topDeathsGame}
+              value={`${topDeathsGame?.topDeathsGame ?? 0} deaths`}
+              tone="red"
+            />
+
+            <AwardCard
+              title="Flest døde pr. game"
+              player={topDeathsPerGame}
+              value={`${topDeathsPerGame?.avgDeaths ?? 0} deaths/game`}
+              tone="red"
+            />
+          </div>
+
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-sm text-zinc-400">Højeste rank</div>
+              <div className="text-sm text-zinc-400">Højeste live rank</div>
               <div className="text-2xl font-bold">{topRanked?.name}</div>
               <div className="text-zinc-400">
                 {topRanked?.tier} {topRanked?.rank} {topRanked?.lp} LP
@@ -180,49 +288,28 @@ export default function Home() {
             </div>
 
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-sm text-zinc-400">Bedste winrate</div>
-              <div className="text-2xl font-bold text-green-400">
-                {players.find((p) => p.winrate === bestWinrate)?.name ?? "-"}
-              </div>
-              <div className="text-zinc-400">{bestWinrate}%</div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-sm text-zinc-400">Bedste KDA</div>
-              <div className="text-2xl font-bold text-green-400">
-                {players.find((p) => p.kda === bestKda)?.name ?? "-"}
-              </div>
-              <div className="text-zinc-400">{bestKda}</div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-sm text-zinc-400">Mest død</div>
-              <div className="text-2xl font-bold text-red-400">
-                {players.find((p) => p.avgDeaths === bestDeaths)?.name ?? "-"}
-              </div>
-              <div className="text-zinc-400">{bestDeaths} deaths/game</div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
-              <div className="text-sm text-zinc-400">Tracked games</div>
-              <div className="text-2xl font-bold">{mostTrackedGames}</div>
-              <div className="text-zinc-400">siden reset</div>
+              <div className="text-sm text-zinc-400">Tracker status</div>
+              <div className="text-2xl font-bold">{totalTrackedGames} games</div>
+              <div className="text-zinc-400">samlet siden reset</div>
             </div>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950">
-            <table className="w-full min-w-[1150px] text-left">
+            <table className="w-full min-w-[1300px] text-left">
               <thead className="bg-zinc-900 text-zinc-300">
                 <tr>
                   <th className="p-4">#</th>
                   <th className="p-4">Spiller</th>
                   <th className="p-4">Role</th>
                   <th className="p-4">Flex Rank</th>
-                  <th className="p-4">Season W/L</th>
-                  <th className="p-4">Season WR</th>
-                  <th className="p-4">Tracked Games</th>
+                  <th className="p-4">Tracked W/L</th>
+                  <th className="p-4">Tracked WR</th>
+                  <th className="p-4">Games</th>
+                  <th className="p-4">Overall</th>
                   <th className="p-4">KDA</th>
                   <th className="p-4">Avg K/D/A</th>
+                  <th className="p-4">Top kills</th>
+                  <th className="p-4">Top deaths</th>
                   <th className="p-4">Damage</th>
                   <th className="p-4">CS/min</th>
                   <th className="p-4">Vision</th>
@@ -281,6 +368,10 @@ export default function Home() {
 
                     <td className="p-4">{p.trackedGames}</td>
 
+                    <td className="p-4 font-bold text-purple-400">
+                      {p.overallScore ?? 0}
+                    </td>
+
                     <td className={`p-4 ${statColor(p.kda, bestKda, worstKda)}`}>
                       {p.kda}
                     </td>
@@ -304,6 +395,27 @@ export default function Home() {
 
                     <td
                       className={`p-4 ${statColor(
+                        p.topKillsGame,
+                        bestTopKillsGame,
+                        0
+                      )}`}
+                    >
+                      {p.topKillsGame ?? 0}
+                    </td>
+
+                    <td
+                      className={`p-4 ${statColor(
+                        p.topDeathsGame,
+                        worstTopDeathsGame,
+                        0,
+                        true
+                      )}`}
+                    >
+                      {p.topDeathsGame ?? 0}
+                    </td>
+
+                    <td
+                      className={`p-4 ${statColor(
                         p.avgDamage,
                         bestDamage,
                         worstDamage
@@ -321,8 +433,8 @@ export default function Home() {
           </div>
 
           <p className="mt-4 text-sm text-zinc-500">
-            Rank, W/L og season WR er hele Flex season. KDA, damage, CS/min,
-            vision og recent games tæller kun games efter reset.
+            Flex rank er live rank. W/L, WR, KDA, damage, CS/min, vision og awards
+            tæller kun tracked games efter reset.
           </p>
 
           <div className="mt-10 space-y-6">
