@@ -82,8 +82,7 @@ export default function Home() {
 
   useEffect(() => {
     loadData();
-    fetch("/api/auto-start");
-  }, []);
+    }, []);
 
   const bestWinrate = players.length
     ? Math.max(...players.map((p) => p.winrate ?? 0))
