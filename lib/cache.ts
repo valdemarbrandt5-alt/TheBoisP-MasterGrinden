@@ -7,19 +7,35 @@ export async function readLeaderboard() {
     .from("leaderboard")
     .select("data")
     .eq("id", LEADERBOARD_ID)
-    .single();
+    .maybeSingle();
 
-  if (error) return [];
+  if (error) {
+    console.log("SUPABASE READ ERROR:", error.message);
+    return [];
+  }
 
-  return data?.data ?? [];
+  if (!data?.data) {
+    return [];
+  }
+
+  if (Array.isArray(data.data)) {
+    return data.data;
+  }
+
+  return [];
 }
 
-export async function saveLeaderboard(leaderboardData: any) {
+export async function saveLeaderboard(leaderboardData: any[]) {
+  const safeData = Array.isArray(leaderboardData) ? leaderboardData : [];
+
   const { error } = await supabase.from("leaderboard").upsert({
     id: LEADERBOARD_ID,
-    data: leaderboardData,
+    data: safeData,
     updated_at: new Date().toISOString(),
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.log("SUPABASE SAVE ERROR:", error.message);
+    throw new Error(error.message);
+  }
 }
