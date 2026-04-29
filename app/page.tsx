@@ -25,18 +25,16 @@ function rankIcon(tier: string) {
   const t = tier?.toLowerCase();
 
   const icons: Record<string, string> = {
-    iron: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-iron.png",
-    bronze: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-bronze.png",
-    silver: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-silver.png",
-    gold: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-gold.png",
-    platinum: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-platinum.png",
-    emerald: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-emerald.png",
-    diamond: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-diamond.png",
-    master: "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-master.png",
-    grandmaster:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-grandmaster.png",
-    challenger:
-      "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/ranked-emblem/emblem-challenger.png",
+    iron: "/ranks/iron.png",
+    bronze: "/ranks/bronze.png",
+    silver: "/ranks/silver.png",
+    gold: "/ranks/gold.png",
+    platinum: "/ranks/platinum.png",
+    emerald: "/ranks/emerald.png",
+    diamond: "/ranks/diamond.png",
+    master: "/ranks/master.png",
+    grandmaster: "/ranks/grandmaster.png",
+    challenger: "/ranks/challenger.png",
   };
 
   return icons[t] ?? null;
